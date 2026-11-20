@@ -200,20 +200,22 @@ pub fn get_monitors() -> Vec<MonitorOut> {
 
 #[tauri::command]
 pub fn copy_image(data_b64: String) -> Result<(), String> {
+    crate::security::check_b64_size(&data_b64)?;
     clipboard::copy_image_png_b64(&data_b64)
 }
 
-/// Read any image file from disk and return a base64-encoded PNG. The editor
-/// uses this instead of the asset protocol so the canvas is never tainted and
-/// paths outside the default save folder still work.
+/// Read an approved image file from disk and return a base64-encoded PNG. The
+/// editor uses this instead of the asset protocol so the canvas is never
+/// tainted; the path is confined to capture/temp/save/thumbnail directories.
 #[tauri::command]
-pub fn read_image_b64(path: String) -> Result<String, String> {
+pub fn read_image_b64(app: AppHandle, path: String) -> Result<String, String> {
     use base64::Engine;
     use image::ImageEncoder;
-    let img = image::open(std::path::Path::new(&path))
-        .map_err(|e| format!("Failed to read image: {e}"))?;
+    let path = crate::security::validate_path(&app, &path)?;
+    let img = image::open(&path).map_err(|e| format!("Failed to read image: {e}"))?;
     let rgba = img.to_rgba8();
     let (w, h) = rgba.dimensions();
+    crate::security::check_dimensions(w, h)?;
     let mut out = Vec::with_capacity((w as usize) * (h as usize) * 4);
     let enc = image::codecs::png::PngEncoder::new(&mut out);
     enc.write_image(rgba.as_raw(), w, h, image::ExtendedColorType::Rgba8)
@@ -253,6 +255,7 @@ pub async fn save_image(
     data_b64: String,
     format: Option<ImageFormat>,
 ) -> Result<SavedInfo, String> {
+    crate::security::check_b64_size(&data_b64)?;
     let app2 = app.clone();
     let result = tauri::async_runtime::spawn_blocking(move || -> AppResult<SavedInfo> {
         let state = app2.state::<Mutex<Settings>>();
@@ -276,6 +279,14 @@ pub async fn save_image_as(
     data_b64: String,
     suggested_name: String,
 ) -> Result<Option<SavedInfo>, String> {
+    crate::security::check_b64_size(&data_b64)?;
+    if suggested_name.is_empty()
+        || suggested_name.len() > 255
+        || suggested_name.contains('\\')
+        || suggested_name.contains('/')
+    {
+        return Err("Invalid file name".into());
+    }
     let handle = app.clone();
     let result = tauri::async_runtime::spawn_blocking(move || -> Result<Option<SavedInfo>, String> {
         let picked = handle
@@ -338,8 +349,10 @@ pub async fn list_history(app: AppHandle) -> Result<Vec<HistoryItem>, String> {
 
 #[tauri::command]
 pub async fn get_thumbnail(app: AppHandle, path: String) -> Result<String, String> {
+    let app2 = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        history::thumbnail(&app, &path).map(|p| p.to_string_lossy().to_string())
+        let path = crate::security::validate_path(&app2, &path)?;
+        history::thumbnail(&app2, &path.to_string_lossy()).map(|p| p.to_string_lossy().to_string())
     })
     .await
     .map_err(|e| e.to_string())?
@@ -347,8 +360,9 @@ pub async fn get_thumbnail(app: AppHandle, path: String) -> Result<String, Strin
 
 #[tauri::command]
 pub async fn delete_history_item(app: AppHandle, path: String) -> Result<(), String> {
+    let app2 = app.clone();
     let outcome = tauri::async_runtime::spawn_blocking(move || {
-        let p = PathBuf::from(&path);
+        let p = crate::security::validate_path(&app2, &path)?;
         if !p.is_file() {
             return Err("File not found".to_string());
         }
@@ -362,13 +376,16 @@ pub async fn delete_history_item(app: AppHandle, path: String) -> Result<(), Str
 }
 
 #[tauri::command]
-pub fn reveal_in_explorer(path: String) -> Result<(), String> {
-    history::reveal_in_explorer(&path)
+pub fn reveal_in_explorer(app: AppHandle, path: String) -> Result<(), String> {
+    let path = crate::security::validate_path(&app, &path)?;
+    history::reveal_in_explorer(&path.to_string_lossy())
 }
 
 #[tauri::command]
 pub fn open_path(app: AppHandle, path: String) -> Result<(), String> {
     use tauri_plugin_opener::OpenerExt;
+    let path = crate::security::validate_path(&app, &path)?;
+    let path = path.to_string_lossy().into_owned();
     app.opener()
         .open_path(path, None::<&str>)
         .map_err(|e| e.to_string())
@@ -385,6 +402,9 @@ pub fn get_settings(app: AppHandle) -> Result<Settings, String> {
 
 #[tauri::command]
 pub async fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
+    if let Some(dir) = &settings.save_dir {
+        crate::security::validate_save_dir(dir)?;
+    }
     let handle = app.clone();
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
         {

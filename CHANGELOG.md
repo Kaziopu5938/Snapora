@@ -3,6 +3,23 @@
 All notable changes to Snapora are documented here. This project follows
 [semantic versioning](https://semver.org/).
 
+## [1.0.3] — 2026-11-20
+
+### Security
+- Added a strict Content Security Policy; removed the unrestricted (`null`) CSP.
+- Narrowed the asset-protocol scope from the whole home/temp/app-data trees to only the capture temp
+  dir and thumbnail cache.
+- All filesystem paths supplied by the frontend (`read_image_b64`, `get_thumbnail`,
+  `delete_history_item`, `reveal_in_explorer`, `open_path`) are canonicalised and restricted to the
+  capture temp dir, thumbnail cache, configured save folder and default save folder.
+- Bounded image payloads: base64 inputs are capped at 64 MB and decoded images at 100 megapixels,
+  preventing memory-exhaustion attacks via IPC.
+- Save As validates the suggested filename (no path separators, max 255 chars).
+- Added `src-tauri/src/security.rs` as the single place for these guards, with unit-testable helpers.
+
+### Changed
+- Version bumped to 1.0.3.
+
 ## [1.0.2] — 2026-11-20
 
 ### Fixed
@@ -54,6 +71,7 @@ First public release.
 - Undo/redo now restores canvas dimensions after crop, rotate and resize.
 - JPEG encoding keeps full colour; WebP uses the correct wire value in settings.
 
+[1.0.3]: https://github.com/Kaziopu5938/Snapora/releases/tag/v1.0.3
 [1.0.2]: https://github.com/Kaziopu5938/Snapora/releases/tag/v1.0.2
 [1.0.1]: https://github.com/Kaziopu5938/Snapora/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Kaziopu5938/Snapora/releases/tag/v1.0.0

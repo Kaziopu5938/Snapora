@@ -6,6 +6,7 @@ mod clipboard;
 mod commands;
 mod error;
 mod history;
+mod security;
 mod settings;
 mod shortcuts;
 mod storage;

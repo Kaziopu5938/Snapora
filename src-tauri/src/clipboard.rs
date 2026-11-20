@@ -5,12 +5,14 @@ use base64::Engine;
 use image::ImageDecoder;
 
 pub fn decode_b64_png(data_b64: &str) -> Result<(u32, u32, Vec<u8>), String> {
+    crate::security::check_b64_size(data_b64)?;
     let raw = base64::engine::general_purpose::STANDARD
         .decode(data_b64.trim())
         .map_err(|e| format!("Invalid image data: {e}"))?;
     let decoder = image::codecs::png::PngDecoder::new(std::io::Cursor::new(&raw))
         .map_err(|e| format!("Invalid PNG data: {e}"))?;
     let (w, h) = decoder.dimensions();
+    crate::security::check_dimensions(w, h)?;
     let mut rgba = vec![0u8; (w as usize) * (h as usize) * 4];
     decoder
         .read_image(&mut rgba)

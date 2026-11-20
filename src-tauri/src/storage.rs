@@ -74,11 +74,13 @@ pub fn encode_image_rgba(
 
 /// Decode a base64 PNG and re-encode into the requested format.
 pub fn transcode_b64_png(data_b64: &str, format: ImageFormat) -> AppResult<Vec<u8>> {
+    crate::security::check_b64_size(data_b64)?;
     let raw = base64::engine::general_purpose::STANDARD
         .decode(data_b64.trim())
         .map_err(|e| format!("Invalid image data: {e}"))?;
     let img = image::load_from_memory_with_format(&raw, image::ImageFormat::Png)
         .map_err(|e| format!("Invalid PNG data: {e}"))?;
+    crate::security::check_dimensions(img.width(), img.height())?;
     match format {
         ImageFormat::Png => Ok(raw),
         ImageFormat::Jpeg => {
