@@ -17,15 +17,35 @@ public class DocCapture {
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT r);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int cmd);
   [DllImport("user32.dll")] public static extern void keybd_event(byte a, byte b, uint c, UIntPtr d);
 }
 '@
 
+$script:mainHandle = $null
+
+function Restore-Snapora($proc) {
+  $rootEl = [System.Windows.Automation.AutomationElement]::RootElement
+  $c1 = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $proc.Id)
+  $wins = $rootEl.FindAll([System.Windows.Automation.TreeScope]::Children, $c1)
+  foreach ($w in $wins) {
+    if ($w.Current.Name -eq 'Snapora') {
+      $h = [IntPtr]$w.Current.NativeWindowHandle
+      [DocCapture]::ShowWindow($h, 9) | Out-Null   # SW_RESTORE
+      [DocCapture]::SetForegroundWindow($h) | Out-Null
+      $script:mainHandle = $h
+      return
+    }
+  }
+  $script:mainHandle = $proc.MainWindowHandle
+}
+
 function Save-Window([string]$name, $proc) {
-  [DocCapture]::SetForegroundWindow($proc.MainWindowHandle) | Out-Null
+  $h = if ($script:mainHandle) { $script:mainHandle } else { $proc.MainWindowHandle }
+  [DocCapture]::SetForegroundWindow($h) | Out-Null
   Start-Sleep -Milliseconds 900
   $r = New-Object DocCapture+RECT
-  [DocCapture]::GetWindowRect($proc.MainWindowHandle, [ref]$r) | Out-Null
+  [DocCapture]::GetWindowRect($h, [ref]$r) | Out-Null
   $w = $r.Right - $r.Left
   $h = $r.Bottom - $r.Top
   $bmp = New-Object System.Drawing.Bitmap $w, $h
@@ -45,7 +65,10 @@ function Click-Element([string]$name) {
   $el = $win.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $c2)
   if (-not $el) {
     $all = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
-    $el = $all | Where-Object { $_.Current.Name -like "$name*" } | Select-Object -First 1
+    $el = $all | Where-Object {
+      $_.Current.Name -like "$name*" -and
+      $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::Button
+    } | Select-Object -First 1
   }
   if ($el) { $el.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); return $true }
   return $false
@@ -69,6 +92,11 @@ function Send-Key([byte]$vk) {
 Get-Process snapora -ErrorAction SilentlyContinue | Stop-Process -Force
 $p = Start-Process -FilePath (Join-Path $root "release\Snapora.exe") -PassThru
 Write-Host "Waiting for Snapora..."; Start-Sleep -Seconds 7
+# Minimise clutter so the gallery shows only Snapora.
+(New-Object -ComObject Shell.Application).MinimizeAll()
+Start-Sleep -Seconds 1
+Restore-Snapora $p
+Start-Sleep -Seconds 1
 
 Write-Host "Capturing home..."; Save-Window "home" $p
 

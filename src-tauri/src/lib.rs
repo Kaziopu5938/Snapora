@@ -13,7 +13,7 @@ mod storage;
 use capture::overlay::{CaptureSession, SharedSession};
 use settings::{Settings, Theme};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, Manager, RunEvent};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, RunEvent};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt as _};
 use tauri_plugin_global_shortcut::{Builder as ShortcutBuilder, ShortcutState};
 use tauri_plugin_opener::OpenerExt;
@@ -25,6 +25,44 @@ fn show_main(app: &AppHandle) {
         let _ = win.set_focus();
     }
     let _ = app.emit("tray://open", ());
+}
+
+/// Keep the main window fully inside the monitor's work area so the taskbar
+/// never covers the bottom of the UI (important on short displays / high DPI).
+fn fit_main_window_to_work_area(app: &AppHandle) {
+    use windows_sys::Win32::Foundation::RECT;
+    use windows_sys::Win32::UI::WindowsAndMessaging::{SystemParametersInfoW, SPI_GETWORKAREA};
+
+    let Some(win) = app.get_webview_window("main") else { return };
+    let mut area: RECT = unsafe { std::mem::zeroed() };
+    if unsafe { SystemParametersInfoW(SPI_GETWORKAREA, 0, &mut area as *mut RECT as *mut _, 0) } == 0 {
+        return;
+    }
+    let avail_w = (area.right - area.left).max(0) as u32;
+    let avail_h = (area.bottom - area.top).max(0) as u32;
+    if avail_w < 320 || avail_h < 240 {
+        return;
+    }
+
+    // Clamp the OUTER size: on Windows the frame adds ~39 px that `set_size`
+    // does not account for, which would push the bottom behind the taskbar.
+    let inner = win.inner_size().unwrap_or(PhysicalSize::new(1060, 700));
+    let outer = win.outer_size().unwrap_or(inner);
+    let frame_w = outer.width.saturating_sub(inner.width);
+    let frame_h = outer.height.saturating_sub(inner.height);
+    let max_outer_w = avail_w.saturating_sub(16);
+    let max_outer_h = avail_h.saturating_sub(16);
+    let target_outer_w = outer.width.min(max_outer_w);
+    let target_outer_h = outer.height.min(max_outer_h);
+    let target_inner_w = target_outer_w.saturating_sub(frame_w).max(320);
+    let target_inner_h = target_outer_h.saturating_sub(frame_h).max(240);
+    let _ = win.set_size(PhysicalSize::new(target_inner_w, target_inner_h));
+
+    // Centre using the real outer size after the resize.
+    let final_outer = win.outer_size().unwrap_or(PhysicalSize::new(target_outer_w, target_outer_h));
+    let x = area.left + (avail_w.saturating_sub(final_outer.width) / 2) as i32;
+    let y = area.top + (avail_h.saturating_sub(final_outer.height) / 2) as i32;
+    let _ = win.set_position(PhysicalPosition::new(x, y));
 }
 
 fn apply_theme_at_startup(app: &AppHandle, s: &Settings) {
@@ -183,6 +221,7 @@ pub fn run() {
 
             capture::overlay::cleanup_stale_temp(handle);
             history::ensure_save_dir(&settings);
+            fit_main_window_to_work_area(handle);
             apply_theme_at_startup(handle, &settings);
             shortcuts::register_all(handle, &settings);
 

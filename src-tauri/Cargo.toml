@@ -1,6 +1,6 @@
 [package]
 name = "snapora"
-version = "1.0.0"
+version = "1.0.1"
 description = "Snapora — Capture. Edit. Share."
 authors = ["Snapora Project"]
 license = "MIT"

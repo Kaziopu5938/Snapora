@@ -13,7 +13,7 @@ export function AboutView() {
           A fast, focused screenshot utility for Windows 10 and 11 — built with Rust, Tauri and React.
         </p>
         <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
-          <span className="badge">v1.0.0</span>
+          <span className="badge">v1.0.1</span>
           <span className="badge">x64</span>
           <span className="badge">Windows 10 / 11</span>
         </div>

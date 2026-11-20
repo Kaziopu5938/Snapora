@@ -141,11 +141,9 @@ fn run_capture(
         std::fs::write(&cap_path, png).map_err(|e| format!("Failed to write capture: {e}"))?;
         let dims = (bitmap.width, bitmap.height);
         let _ = bitmap;
-        if let Some(w) = &main {
-            let _ = w.unminimize();
-            let _ = w.show();
-            let _ = w.set_focus();
-        }
+        // Never raise the main window just because a global shortcut fired a
+        // capture. Restore it only to the state it had before the capture.
+        restore_main(app, was_visible);
         let _ = app.emit(
             "capture://ready",
             serde_json::json!({
