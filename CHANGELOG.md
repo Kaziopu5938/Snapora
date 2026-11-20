@@ -3,6 +3,20 @@
 All notable changes to Snapora are documented here. This project follows
 [semantic versioning](https://semver.org/).
 
+## [1.0.2] — 2026-11-20
+
+### Fixed
+- **Print Screen ownership:** Snapora now disables Windows' "Print screen key opens Snipping Tool"
+  shortcut by default (with a "Take over Print Screen" toggle in Settings → Keyboard) and
+  re-registers its global hotkeys, so pressing Print Screen while minimized launches Snapora rather
+  than the built-in screenshot tool.
+- **Editor opens automatically after shortcut captures:** the window is now revealed by the frontend
+  only after it has switched to the editor view, so a capture taken while minimized opens the editor
+  directly instead of the Home screen or nothing at all.
+
+### Changed
+- Version bumped to 1.0.2.
+
 ## [1.0.1] — 2026-11-20
 
 ### Fixed
@@ -40,5 +54,6 @@ First public release.
 - Undo/redo now restores canvas dimensions after crop, rotate and resize.
 - JPEG encoding keeps full colour; WebP uses the correct wire value in settings.
 
+[1.0.2]: https://github.com/Kaziopu5938/Snapora/releases/tag/v1.0.2
 [1.0.1]: https://github.com/Kaziopu5938/Snapora/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Kaziopu5938/Snapora/releases/tag/v1.0.0

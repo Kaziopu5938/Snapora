@@ -140,7 +140,13 @@ export function SettingsView() {
         </Panel>
 
         <Panel icon={<Keyboard />} title="Keyboard & shortcuts">
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <ToggleRow
+            title="Take over Print Screen"
+            description="Disable Windows' built-in Snipping shortcut so Snapora receives the key. Restart Snapora if Windows still intercepts it."
+            checked={settings.takeOverPrintScreen}
+            onChange={(v) => set("takeOverPrintScreen", v)}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 8 }}>
             <ToggleRow title="Print Screen — Region" checked={settings.hotkeys.regionEnabled} onChange={(v) => set("hotkeys", { ...settings.hotkeys, regionEnabled: v })} />
             <ToggleRow title="Alt + Print Screen — Active window" checked={settings.hotkeys.activeWindowEnabled} onChange={(v) => set("hotkeys", { ...settings.hotkeys, activeWindowEnabled: v })} />
             <ToggleRow title="Ctrl + Print Screen — Fullscreen" checked={settings.hotkeys.fullscreenEnabled} onChange={(v) => set("hotkeys", { ...settings.hotkeys, fullscreenEnabled: v })} />

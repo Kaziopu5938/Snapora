@@ -377,7 +377,9 @@ pub fn finish(
     };
 
     let (bmp, cap_path, captured_at, dims, main_was_visible) = result;
-    restore_main(app, main_was_visible);
+    // The frontend opens the editor and then reveals the window. Keep it
+    // hidden here so the user never sees a stale Home frame.
+    let _ = main_was_visible;
     let _ = bmp;
     let _ = app.emit(
         "capture://ready",

@@ -8,7 +8,7 @@
 
 A fast, focused screenshot application for Windows 10 & 11 — built with Rust, Tauri 2 and React.
 
-[![version](https://img.shields.io/badge/version-1.0.1-amber?style=flat-square)](https://github.com/Kaziopu5938/Snapora/releases)
+[![version](https://img.shields.io/badge/version-1.0.2-amber?style=flat-square)](https://github.com/Kaziopu5938/Snapora/releases)
 [![platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20%28x64%29-blue?style=flat-square)](https://www.microsoft.com/windows)
 [![stack](https://img.shields.io/badge/stack-Rust%20%C2%B7%20Tauri%202%20%C2%B7%20React%2019-orange?style=flat-square)](#architecture)
 [![license](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
@@ -152,6 +152,9 @@ This release was built and exercised on a real Windows host:
 - Global `Ctrl+PrtSc` produced a real 1366×768 screenshot; editor rotate/undo, PNG/JPEG/WebP saving,
   `Ctrl+S`, `Ctrl+C` to the Windows clipboard, and settings persistence were all verified live.
 - App launches at roughly 23 MB working set.
+- v1.0.2: the main window stays inside the work area; Windows' Print Screen snipping shortcut is
+  disabled on launch (toggleable in Settings); a capture from a minimized window restores the window
+  straight into the editor, not Home.
 
 Features that need a human at the desktop (visual review on scaled displays, pasting into Word /
 Discord / Teams, installer UI flow) are listed in the [manual checklist](BUILD.md#manual-verification-checklist).

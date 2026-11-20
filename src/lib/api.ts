@@ -26,6 +26,7 @@ export const api = {
   startCapture: (mode: CaptureMode, monitorIndex?: number) =>
     call<void>("start_capture", { mode, monitorIndex: monitorIndex ?? null }),
   cancelCapture: () => call<void>("cancel_capture"),
+  revealMainWindow: () => call<void>("reveal_main_window"),
   discardCapture: (tempPath: string) => call<void>("discard_capture", { tempPath }),
   getMonitors: () => call<Monitor[]>("get_monitors"),
 

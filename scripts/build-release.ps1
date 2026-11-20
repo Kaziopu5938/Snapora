@@ -50,7 +50,7 @@ $release = Join-Path $root "release"
 New-Item -ItemType Directory -Path $release -Force | Out-Null
 Copy-Item "src-tauri\target\release\snapora.exe" "$release\Snapora.exe" -Force
 Copy-Item "src-tauri\target\release\WebView2Loader.dll" "$release\WebView2Loader.dll" -Force
-Copy-Item "src-tauri\target\release\bundle\msi\Snapora_1.0.1_x64_en-US.msi" "$release\Snapora_x64.msi" -Force
+Copy-Item "src-tauri\target\release\bundle\msi\Snapora_1.0.2_x64_en-US.msi" "$release\Snapora_x64.msi" -Force
 
 Write-Host "`nDone. Deliverables in $release"
 Get-ChildItem $release | Select-Object Name, @{ n = "MB"; e = { [math]::Round($_.Length / 1MB, 2) } }

@@ -77,6 +77,63 @@ pub fn os_snipping_setting() -> Option<bool> {
     }
 }
 
+/// Enable/disable the Windows "Print screen key opens Snipping Tool" shortcut.
+/// Snapora turns this off by default so the physical Print Screen key reaches
+/// our global hotkeys instead of the built-in screenshot tool.
+pub fn set_os_snipping_setting(enabled: bool) -> Result<(), String> {
+    use windows_sys::Win32::System::Registry::{
+        RegCloseKey, RegOpenKeyExW, RegSetValueExW, HKEY_CURRENT_USER, KEY_SET_VALUE, REG_DWORD,
+    };
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        SendMessageTimeoutW, HWND_BROADCAST, SMTO_ABORTIFHUNG, WM_SETTINGCHANGE,
+    };
+
+    fn wide(s: &str) -> Vec<u16> {
+        use std::ffi::OsStr;
+        use std::os::windows::ffi::OsStrExt;
+        OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
+    }
+
+    let subkey = wide("Control Panel\\Keyboard");
+    let value = wide("PrintScreenKeyForSnippingEnabled");
+    let mut key: *mut std::ffi::c_void = std::ptr::null_mut();
+    let status = unsafe {
+        RegOpenKeyExW(HKEY_CURRENT_USER, subkey.as_ptr(), 0, KEY_SET_VALUE, &mut key)
+    };
+    if status != 0 {
+        return Err(format!("Could not open keyboard registry key ({status})"));
+    }
+    let data: u32 = if enabled { 1 } else { 0 };
+    let status = unsafe {
+        RegSetValueExW(
+            key,
+            value.as_ptr(),
+            0,
+            REG_DWORD,
+            &data as *const u32 as *const u8,
+            std::mem::size_of::<u32>() as u32,
+        )
+    };
+    unsafe { RegCloseKey(key) };
+    if status != 0 {
+        return Err(format!("Could not change Print Screen setting ({status})"));
+    }
+    // Tell running apps the keyboard settings changed.
+    let mut result: usize = 0;
+    unsafe {
+        SendMessageTimeoutW(
+            HWND_BROADCAST,
+            WM_SETTINGCHANGE,
+            0,
+            wide("Keyboard").as_ptr() as isize,
+            SMTO_ABORTIFHUNG,
+            1500,
+            &mut result,
+        );
+    }
+    Ok(())
+}
+
 /// (mode, enabled, combo, id, label) rows in stable order.
 fn rows(hotkeys: &HotkeySettings) -> [(CaptureMode, bool, &'static str, &'static str, &'static str); 4] {
     [

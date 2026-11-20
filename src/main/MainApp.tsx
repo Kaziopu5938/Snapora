@@ -137,7 +137,7 @@ export function MainApp() {
     })();
 
     unsubs.push(
-      onCaptureReady((p: CaptureReady) =>
+      onCaptureReady((p: CaptureReady) => {
         openEditor({
           path: p.tempPath,
           fileName: p.fileName,
@@ -146,8 +146,11 @@ export function MainApp() {
           source: p.source,
           isTemp: true,
           fromView: view,
-        })
-      ),
+        });
+        // Show the window only after React has committed the editor view, so
+        // a shortcut capture never flashes the Home screen first.
+        window.setTimeout(() => api.revealMainWindow().catch(() => undefined), 150);
+      }),
       onCaptureError((msg) => pushToast("error", "Capture failed", msg)),
       onHistoryChanged(() => refreshHistory()),
       onShortcutsUpdated(setReport),

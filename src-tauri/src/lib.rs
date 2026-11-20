@@ -189,6 +189,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::start_capture,
             commands::cancel_capture,
+            commands::reveal_main_window,
             commands::discard_capture,
             commands::overlay_info,
             commands::overlay_window_at,
@@ -223,6 +224,9 @@ pub fn run() {
             history::ensure_save_dir(&settings);
             fit_main_window_to_work_area(handle);
             apply_theme_at_startup(handle, &settings);
+            // Windows may reserve PrtSc for Snipping Tool; take it over unless
+            // the user opted out, then register our global hotkeys.
+            let _ = shortcuts::set_os_snipping_setting(!settings.take_over_print_screen);
             shortcuts::register_all(handle, &settings);
 
             // Autostart state follows the persisted setting.

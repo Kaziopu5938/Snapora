@@ -87,8 +87,16 @@ pub struct Settings {
     pub fullscreen_all_monitors: bool,
     // Keyboard
     pub hotkeys: HotkeySettings,
+    /// Disable Windows' "Print screen opens Snipping Tool" shortcut so our
+    /// global hotkeys actually receive the key (Windows 10/11).
+    #[serde(default = "default_true")]
+    pub take_over_print_screen: bool,
     // Appearance
     pub theme: Theme,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Default for Settings {
@@ -104,6 +112,7 @@ impl Default for Settings {
             include_cursor: false,
             fullscreen_all_monitors: true,
             hotkeys: HotkeySettings::default(),
+            take_over_print_screen: true,
             theme: Theme::System,
         }
     }

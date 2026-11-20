@@ -141,9 +141,9 @@ fn run_capture(
         std::fs::write(&cap_path, png).map_err(|e| format!("Failed to write capture: {e}"))?;
         let dims = (bitmap.width, bitmap.height);
         let _ = bitmap;
-        // Never raise the main window just because a global shortcut fired a
-        // capture. Restore it only to the state it had before the capture.
-        restore_main(app, was_visible);
+        // Do NOT raise the window here: the frontend switches to the editor
+        // view first, then calls reveal_main_window. Showing it now would
+        // briefly display the Home screen.
         let _ = app.emit(
             "capture://ready",
             serde_json::json!({

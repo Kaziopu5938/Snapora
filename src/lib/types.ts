@@ -30,6 +30,7 @@ export interface Settings {
   includeCursor: boolean;
   fullscreenAllMonitors: boolean;
   hotkeys: HotkeySettings;
+  takeOverPrintScreen: boolean;
   theme: Theme;
 }
 

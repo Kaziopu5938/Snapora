@@ -61,7 +61,7 @@ Outputs:
 
 - `src-tauri/target/release/snapora.exe`
 - `src-tauri/target/release/WebView2Loader.dll`
-- `src-tauri/target/release/bundle/msi/Snapora_1.0.1_x64_en-US.msi`
+- `src-tauri/target/release/bundle/msi/Snapora_1.0.2_x64_en-US.msi`
 
 ## Installer notes
 

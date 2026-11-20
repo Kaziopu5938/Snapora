@@ -30,6 +30,18 @@ pub fn cancel_capture(app: AppHandle) -> Result<(), String> {
     overlay::cancel(&app)
 }
 
+/// Called by the frontend *after* it has switched to the editor view, so the
+/// window always opens on the editor rather than a stale Home screen.
+#[tauri::command]
+pub fn reveal_main_window(app: AppHandle) -> Result<(), String> {
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.unminimize();
+        let _ = win.show();
+        let _ = win.set_focus();
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn discard_capture(temp_path: String) -> Result<(), String> {
     crate::capture::discard_capture(&temp_path);
@@ -400,7 +412,9 @@ pub fn apply_side_effects(app: &AppHandle, s: &Settings) {
     };
     // Save dir exists.
     let _ = std::fs::create_dir_all(storage::save_dir(s));
-    // Global shortcuts.
+    // Give the physical Print Screen key to Snapora instead of Windows Snipping Tool.
+    let _ = shortcuts::set_os_snipping_setting(!s.take_over_print_screen);
+    // Global shortcuts (re-registered after the OS setting changes).
     shortcuts::register_all(app, s);
     // Window theme.
     if let Some(win) = app.get_webview_window("main") {
